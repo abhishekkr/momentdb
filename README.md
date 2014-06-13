@@ -3,6 +3,8 @@ momentdb
 
 ##### It allows you to record all Moments in existence of any data-point.
 
+distributed under [Mozilla Public License v2](http://www.mozilla.org/MPL/2.0/)
+
 ---
 
 >
