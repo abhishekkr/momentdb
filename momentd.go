@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/abhishekkr/goshare"
+
+	momentdb_splitter "./splitter"
 )
 
 func banner() {
@@ -21,6 +23,11 @@ func banner() {
 func main() {
 	banner()
 	config := goshare.ConfigFromFlags()
-	goshare.GoShareEngine(config)
+
+	fmt.Println(config, "\n\n")
+	momentdb_splitter.StartEngines("./node-config.json.sample")
+	/*
+		goshare.GoShareEngine(config)
+	*/
 	goshare.DoYouWannaContinue()
 }
