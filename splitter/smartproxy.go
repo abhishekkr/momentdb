@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 
 	golzmq "github.com/abhishekkr/gol/golzmq"
 )
@@ -26,12 +27,14 @@ type EngineDestination struct {
 	SplitterPattern    string `json:"pattern"`
 	SourceChannel      chan []byte
 	DestinationChannel chan []byte
+	RequestPattern     *regexp.Regexp
 }
 
 type EngineDetail struct {
-	SourceIP     string              `json:"source_ip"`
-	SourcePorts  []int               `json:"source_ports"`
-	Destinations []EngineDestination `json:"destinations"`
+	SourceIP            string              `json:"source_ip"`
+	SourcePorts         []int               `json:"source_ports"`
+	Destinations        []EngineDestination `json:"destinations"`
+	DefaultDestinations []*EngineDestination
 }
 
 type EngineCollection struct {
@@ -40,10 +43,29 @@ type EngineCollection struct {
 
 /* Create a Proxy connection for given ZmqProxyConfig */
 func ZmqSmartProxy(engine *EngineDetail) {
-
+	default_len := 0
 	for idx, _ := range engine.Destinations {
+		if engine.Destinations[idx].SplitterMode == "default" {
+			default_len += 1
+		}
+	}
+	engine.DefaultDestinations = make([]*EngineDestination, default_len)
+	default_idx := 0
+	for idx, _ := range engine.Destinations {
+		if engine.Destinations[idx].SplitterMode == "default" {
+			engine.DefaultDestinations[default_idx] = &(engine.Destinations[idx])
+			engine.Destinations[idx].SplitterPattern = ".?"
+			default_idx += 1
+		}
+		pattern, pattern_err := regexp.Compile(engine.Destinations[idx].SplitterPattern)
+		if pattern_err != nil {
+			fmt.Println("ERROR: Compilation of provided Regexp failed.", pattern_err)
+			continue
+		}
+
 		engine.Destinations[idx].SourceChannel = make(chan []byte)
 		engine.Destinations[idx].DestinationChannel = make(chan []byte)
+		engine.Destinations[idx].RequestPattern = pattern
 		go proxyDestination(&(engine.Destinations[idx]))
 	}
 	go proxySource(engine)
@@ -84,15 +106,30 @@ func proxySource(engine *EngineDetail) error {
 
 /* main split logic */
 func ChannelForRequest(engine *EngineDetail, request []byte) []byte {
+	destinations := make([]*EngineDestination, len(engine.Destinations))
 	var reply []byte
-	for _, destination := range engine.Destinations {
-		if destination.SplitterMode == "default" {
-			fmt.Println("need more logic here")
-			destination.DestinationChannel <- request
-			reply = <-destination.SourceChannel
-			break
+	destination_idx := 0
+	for idx, _ := range engine.Destinations {
+		pattern := engine.Destinations[idx].RequestPattern
+		if engine.Destinations[idx].SplitterMode == "key" && pattern.Match(request) {
+			destinations[destination_idx] = &(engine.Destinations[idx])
+			destination_idx += 1
 		}
 	}
-	fmt.Println("when no handler found send back default")
+	if destinations[0] == nil {
+		for idx, _ := range engine.DefaultDestinations {
+			destinations[destination_idx] = engine.DefaultDestinations[idx]
+			destination_idx += 1
+		}
+	}
+	if destinations[0] == nil {
+		fmt.Println(engine.Destinations[0])
+		fmt.Println(len(engine.DefaultDestinations))
+		fmt.Println("ERROR: no destinations found for this request")
+		return reply
+	}
+
+	destinations[0].DestinationChannel <- request
+	reply = <-destinations[0].SourceChannel
 	return reply
 }

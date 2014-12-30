@@ -10,9 +10,9 @@ func StartEngines(config_path string) {
 	usable_engines, _ := LoadEngineCollection(config_path)
 
 	fmt.Println("Start all the engines configured...")
-	for _, engine := range usable_engines.Engines {
-		fmt.Println(engine)
-		go ZmqSmartProxy(&engine)
+	for idx, _ := range usable_engines.Engines {
+		fmt.Println(usable_engines.Engines[idx])
+		go ZmqSmartProxy(&(usable_engines.Engines[idx]))
 	}
 }
 
