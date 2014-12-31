@@ -129,7 +129,11 @@ func ChannelForRequest(engine *EngineDetail, request []byte) []byte {
 		return reply
 	}
 
-	destinations[0].DestinationChannel <- request
-	reply = <-destinations[0].SourceChannel
+	if destinations[1] == nil {
+		destinations[0].DestinationChannel <- request
+		reply = <-destinations[0].SourceChannel
+	} else {
+		reply = Replicate(destinations)
+	}
 	return reply
 }
