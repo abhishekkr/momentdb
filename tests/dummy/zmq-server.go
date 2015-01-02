@@ -10,11 +10,11 @@ import (
 
 func defaultF(messages []string) string {
 	fmt.Println("get:", messages)
-	return fmt.Sprintf("GET: %s", strings.Join(messages, " "))
+	return fmt.Sprintf("get: %s", strings.Join(messages, " "))
 }
 
 func people(messages []string) string {
-	fmt.Println("put:", messages)
+	fmt.Println("people:", messages)
 	return fmt.Sprintf("people: %s", strings.Join(messages, " "))
 }
 
