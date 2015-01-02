@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"strings"
 
 	golzmq "github.com/abhishekkr/gol/golzmq"
+	"github.com/abhishekkr/goshare"
 )
 
 func LoadEngineCollection(config_path string) (engines EngineCollection, err error) {
@@ -91,7 +93,7 @@ func proxySource(engine *EngineDetail) error {
 	socket := golzmq.ZmqReplySocket(engine.SourceIP, engine.SourcePorts)
 
 	reply_handler := func(request []byte) []byte {
-		return ChannelForRequest(engine, request)
+		return channelForRequest(engine, request)
 	}
 
 	for {
@@ -104,14 +106,49 @@ func proxySource(engine *EngineDetail) error {
 	return nil
 }
 
-/* main split logic */
-func ChannelForRequest(engine *EngineDetail, request []byte) []byte {
+/* check for key-type destination based on pattern */
+func packetSuitsKeyPatterrn(goshare_packet goshare.Packet, destination EngineDestination) bool {
+	switch goshare_packet.DBAction {
+	case "push":
+		for keyname, _ := range goshare_packet.HashMap {
+			if destination.RequestPattern.Match([]byte(keyname)) {
+				return true
+			}
+		}
+	case "read", "delete":
+		if destination.RequestPattern.Match([]byte(goshare_packet.KeyList[0])) {
+			return true
+		}
+	}
+	return false
+}
+
+/* check for destination based on SplitterType */
+func packetSuitsDestination(goshare_packet goshare.Packet, destination EngineDestination) bool {
+	if destination.SplitterMode == "partial" && destination.SplitterType == "key" {
+		return packetSuitsKeyPatterrn(goshare_packet, destination)
+	}
+	return false
+}
+
+/* check if request suits destination */
+func requestSuitsDestination(request []byte, goshare_packet goshare.Packet, destination EngineDestination) bool {
+	if goshare_packet.DBAction == "ERROR" && destination.RequestPattern.Match(request) {
+		return true
+	}
+	return packetSuitsDestination(goshare_packet, destination)
+}
+
+/* main split logic, makes call for replication when required */
+func channelForRequest(engine *EngineDetail, request []byte) (reply []byte) {
 	destinations := make([]*EngineDestination, len(engine.Destinations))
-	var reply []byte
 	destination_idx := 0
+
+	request_fields := strings.Fields(string(request))
+	goshare_packet := goshare.CreatePacket(request_fields)
+
 	for idx, _ := range engine.Destinations {
-		pattern := engine.Destinations[idx].RequestPattern
-		if engine.Destinations[idx].SplitterMode == "key" && pattern.Match(request) {
+		if requestSuitsDestination(request, goshare_packet, engine.Destinations[idx]) {
 			destinations[destination_idx] = &(engine.Destinations[idx])
 			destination_idx += 1
 		}
@@ -129,11 +166,6 @@ func ChannelForRequest(engine *EngineDetail, request []byte) []byte {
 		return reply
 	}
 
-	if destinations[1] == nil {
-		destinations[0].DestinationChannel <- request
-		reply = <-destinations[0].SourceChannel
-	} else {
-		reply = Replicate(destinations)
-	}
+	reply = Replicate(destinations, goshare_packet, request)
 	return reply
 }
