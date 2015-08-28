@@ -25,6 +25,9 @@ func sendBalancedMode(destinations []*EngineDestination, goshare_packet goshare.
 
 /* manage replicated actions for DBTasks */
 func Replicate(destinations []*EngineDestination, goshare_packet goshare.Packet, request []byte) (reply []byte) {
+	return sendBalancedMode(destinations, goshare_packet, request)
+
+	/*to be fixed*/
 	if goshare_packet.DBAction == "read" {
 		return sendBalancedMode(destinations, goshare_packet, request)
 	}
