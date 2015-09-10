@@ -1,4 +1,4 @@
-package momentdb_splitter
+package momentdbSplitter
 
 import (
 	"fmt"
@@ -9,25 +9,27 @@ import (
 	"github.com/abhishekkr/goshare"
 )
 
-/* Create a Proxy connection for given ZmqProxyConfig */
+/*
+ZmqSmartProxy create a Proxy connection for given ZmqProxyConfig.
+*/
 func ZmqSmartProxy(engine *EngineDetail) {
-	default_len := 0
-	for idx, _ := range engine.Destinations {
+	defaultLength := 0
+	for idx := range engine.Destinations {
 		if engine.Destinations[idx].SplitterMode == "default" {
-			default_len += 1
+			defaultLength++
 		}
 	}
-	engine.DefaultDestinations = make([]*EngineDestination, default_len)
-	default_idx := 0
-	for idx, _ := range engine.Destinations {
+	engine.DefaultDestinations = make([]*EngineDestination, defaultLength)
+	defaultIndex := 0
+	for idx := range engine.Destinations {
 		if engine.Destinations[idx].SplitterMode == "default" {
-			engine.DefaultDestinations[default_idx] = &(engine.Destinations[idx])
+			engine.DefaultDestinations[defaultIndex] = &(engine.Destinations[idx])
 			engine.Destinations[idx].SplitterPattern = ".?"
-			default_idx += 1
+			defaultIndex++
 		}
-		pattern, pattern_err := regexp.Compile(engine.Destinations[idx].SplitterPattern)
-		if pattern_err != nil {
-			fmt.Println("ERROR: Compilation of provided Regexp failed.", pattern_err)
+		pattern, patternError := regexp.Compile(engine.Destinations[idx].SplitterPattern)
+		if patternError != nil {
+			fmt.Println("ERROR: Compilation of provided Regexp failed.", patternError)
 			continue
 		}
 
@@ -39,90 +41,90 @@ func ZmqSmartProxy(engine *EngineDetail) {
 	go proxySource(engine)
 }
 
-/* Create a ZMQ Proxy Reader from source of Proxy */
+/* proxyDestination create a ZMQ Proxy Reader from source of Proxy. */
 func proxyDestination(destination *EngineDestination) error {
 	socket := golzmq.ZmqRequestSocket(destination.DestinationIP, destination.DestinationPorts)
 
 	for {
 		request := <-destination.DestinationChannel
-		reply, err_request := golzmq.ZmqRequestByte(socket, request)
-		if err_request != nil {
-			fmt.Println("ERROR:", err_request)
-			return err_request
+		reply, errorRequest := golzmq.ZmqRequestByte(socket, request)
+		if errorRequest != nil {
+			fmt.Println("ERROR:", errorRequest)
+			return errorRequest
 		}
 		destination.SourceChannel <- reply
 	}
 }
 
-/* Create a ZMQ Proxy Reader from source of Proxy */
+/* proxySource create a ZMQ Proxy Reader from source of Proxy */
 func proxySource(engine *EngineDetail) error {
 	socket := golzmq.ZmqReplySocket(engine.SourceIP, engine.SourcePorts)
 
-	reply_handler := func(request []byte) []byte {
+	replyHandler := func(request []byte) []byte {
 		return channelForRequest(engine, request)
 	}
 
 	for {
-		err_reply := golzmq.ZmqReplyByte(socket, reply_handler)
-		if err_reply != nil {
-			fmt.Println("ERROR:", err_reply)
-			return err_reply
+		errorReply := golzmq.ZmqReplyByte(socket, replyHandler)
+		if errorReply != nil {
+			fmt.Println("ERROR:", errorReply)
+			return errorReply
 		}
 	}
 	return nil
 }
 
-/* check for key-type destination based on pattern */
-func packetSuitsKeyPatterrn(goshare_packet goshare.Packet, destination EngineDestination) bool {
-	switch goshare_packet.DBAction {
+/* packetSuitsKeyPatterrn check for key-type destination based on pattern. */
+func packetSuitsKeyPatterrn(gosharePacket goshare.Packet, destination EngineDestination) bool {
+	switch gosharePacket.DBAction {
 	case "push":
-		for keyname, _ := range goshare_packet.HashMap {
+		for keyname := range gosharePacket.HashMap {
 			if destination.RequestPattern.Match([]byte(keyname)) {
 				return true
 			}
 		}
 	case "read", "delete":
-		if destination.RequestPattern.Match([]byte(goshare_packet.KeyList[0])) {
+		if destination.RequestPattern.Match([]byte(gosharePacket.KeyList[0])) {
 			return true
 		}
 	}
 	return false
 }
 
-/* check for destination based on SplitterType */
-func packetSuitsDestination(goshare_packet goshare.Packet, destination EngineDestination) bool {
+/* packetSuitsDestination check for destination based on SplitterType. */
+func packetSuitsDestination(gosharePacket goshare.Packet, destination EngineDestination) bool {
 	if destination.SplitterMode == "partial" && destination.SplitterType == "key" {
-		return packetSuitsKeyPatterrn(goshare_packet, destination)
+		return packetSuitsKeyPatterrn(gosharePacket, destination)
 	}
 	return false
 }
 
-/* check if request suits destination */
-func requestSuitsDestination(request []byte, goshare_packet goshare.Packet, destination EngineDestination) bool {
-	if goshare_packet.DBAction == "ERROR" && destination.RequestPattern.Match(request) {
+/* requestSuitsDestination check if request suits destination. */
+func requestSuitsDestination(request []byte, gosharePacket goshare.Packet, destination EngineDestination) bool {
+	if gosharePacket.DBAction == "ERROR" && destination.RequestPattern.Match(request) {
 		return true
 	}
-	return packetSuitsDestination(goshare_packet, destination)
+	return packetSuitsDestination(gosharePacket, destination)
 }
 
-/* main split logic, makes call for replication when required */
+/* channelForRequest is the main split logic, makes call for replication when required */
 func channelForRequest(engine *EngineDetail, request []byte) (reply []byte) {
 	destinations := make([]*EngineDestination, len(engine.Destinations))
-	destination_idx := 0
+	destinationIndex := 0
 
-	request_fields := strings.Fields(string(request))
-	goshare_packet := goshare.CreatePacket(request_fields)
+	requestFields := strings.Fields(string(request))
+	gosharePacket := goshare.CreatePacket(requestFields)
 
-	for idx, _ := range engine.Destinations {
-		if requestSuitsDestination(request, goshare_packet, engine.Destinations[idx]) {
-			destinations[destination_idx] = &(engine.Destinations[idx])
-			destination_idx += 1
+	for idx := range engine.Destinations {
+		if requestSuitsDestination(request, gosharePacket, engine.Destinations[idx]) {
+			destinations[destinationIndex] = &(engine.Destinations[idx])
+			destinationIndex++
 		}
 	}
 	if destinations[0] == nil {
-		for idx, _ := range engine.DefaultDestinations {
-			destinations[destination_idx] = engine.DefaultDestinations[idx]
-			destination_idx += 1
+		for idx := range engine.DefaultDestinations {
+			destinations[destinationIndex] = engine.DefaultDestinations[idx]
+			destinationIndex++
 		}
 	}
 	if destinations[0] == nil {
@@ -132,6 +134,6 @@ func channelForRequest(engine *EngineDetail, request []byte) (reply []byte) {
 		return reply
 	}
 
-	reply = Replicate(destinations, goshare_packet, request)
+	reply = Replicate(destinations, gosharePacket, request)
 	return reply
 }
