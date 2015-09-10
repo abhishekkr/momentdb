@@ -1,5 +1,8 @@
--tags zmq_4_x github.com/alecthomas/gozmq
 github.com/abhishekkr/levigoNS
 github.com/abhishekkr/levigoTSDS
+github.com/abhishekkr/gollog
+github.com/abhishekkr/golassert
+-tags zmq_4_x github.com/alecthomas/gozmq
+-tags zmq_4_x github.com/abhishekkr/golzmq
 -tags zmq_4_x github.com/abhishekkr/goshare
-github.com/abhishekkr/gol
+-tags zmq_4_x github.com/abhishekkr/momentdb/splitter
