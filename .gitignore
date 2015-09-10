@@ -9,3 +9,4 @@ temp/*
 .goenv
 .config
 *.lock
+bin
