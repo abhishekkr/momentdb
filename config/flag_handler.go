@@ -5,21 +5,16 @@ import (
 	"fmt"
 
 	"github.com/abhishekkr/gol/golconfig"
+	"github.com/abhishekkr/goshare"
 )
 
-/* assignIfEmpty assigns val to *key only if it's empty */
-func assignIfEmpty(config *golconfig.FlatConfig, key string, val string) {
-	if *config[key] == "" {
-		*config[key] = val
-	}
-}
-
 /* getNodeType assigns type value based on values available and priority of node-type */
-func getNodeType(config *golconfig.FlatConfig) {
-	if *config["splitter"] != "" {
-		*config["type"] = "splitter"
+func getNodeType(config *(golconfig.FlatConfig)) {
+	if (*config)["splitter"] != "" {
+		(*config)["type"] = "splitter"
 	} else {
-		*config["type"] = "goshare"
+		(*config)["type"] = "goshare"
+		(*config) = mergeConfig((*config), goshare.ConfigFromFlags())
 	}
 }
 
@@ -31,24 +26,29 @@ func ConfigFromFlags() golconfig.FlatConfig {
 	config = make(golconfig.FlatConfig)
 
 	flag.Parse()
-	flagConfig := flag.String("config", "", "the path to overriding config file")
-	if *flagConfig != "" {
-		configFile := golconfig.GetConfigurator("json")
-		configFile.ConfigFromFile(*flagConfig, &config)
-	}
-	config["type"] = flag.String("type", "", "type of momentdb system (store,splitter,...)")
-	config["splitter"] = flag.String("splitter", "", "the path to configure splitter logic")
-
-	flagCPUProfile := flag.String("cpuprofile", "", "write cpu profile to file")
-	assignIfEmpty(&config, "cpuprofile", *flagCPUProfile)
+	config["type"] = *(flag.String("type", "", "type of momentdb system (store,splitter,...)"))
+	config["splitter"] = *(flag.String("splitter", "", "the path to configure splitter logic"))
 
 	getNodeType(&config)
-	defaultGoshareConfig(&config)
 
-	fmt.Printf("MomentDB base config:")
+	fmt.Printf("MomentDB base config:\n")
 	for cfg, val := range config {
-		fmt.Printf("[ %v : %v ]:", cfg, config["cfg"])
+		fmt.Printf("[ %v : %v ]\n", cfg, val)
 	}
-	fmt.Println("\n\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	return config
+}
+
+/*
+mergeConfig
+*/
+func mergeConfig(cfgs ...golconfig.FlatConfig) golconfig.FlatConfig {
+	var config golconfig.FlatConfig
+	config = make(golconfig.FlatConfig)
+
+	for _, cfg := range cfgs {
+		for k, v := range cfg {
+			config[k] = v
+		}
+	}
 	return config
 }
