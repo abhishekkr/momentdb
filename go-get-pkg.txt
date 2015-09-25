@@ -2,4 +2,5 @@ github.com/abhishekkr/gol/gollog
 github.com/abhishekkr/gol/golassert
 -tags zmq_4_x github.com/abhishekkr/gol/golzmq
 -tags zmq_4_x github.com/abhishekkr/goshare
+-tags zmq_4_x github.com/abhishekkr/momentdb/config
 -tags zmq_4_x github.com/abhishekkr/momentdb/splitter
