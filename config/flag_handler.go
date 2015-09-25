@@ -8,6 +8,12 @@ import (
 	"github.com/abhishekkr/goshare"
 )
 
+// flags
+var (
+	flagType     = flag.String("type", "", "type of momentdb system (store,splitter,...)")
+	flatSplitter = flag.String("splitter", "", "the path to configure splitter logic")
+)
+
 /* getNodeType assigns type value based on values available and priority of node-type */
 func getNodeType(config *(golconfig.FlatConfig)) {
 	if (*config)["splitter"] != "" {
@@ -26,8 +32,8 @@ func ConfigFromFlags() golconfig.FlatConfig {
 	config = make(golconfig.FlatConfig)
 
 	flag.Parse()
-	config["type"] = *(flag.String("type", "", "type of momentdb system (store,splitter,...)"))
-	config["splitter"] = *(flag.String("splitter", "", "the path to configure splitter logic"))
+	config["type"] = *flagType
+	config["splitter"] = *flatSplitter
 
 	getNodeType(&config)
 
