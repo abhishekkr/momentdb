@@ -116,6 +116,9 @@ elif [[ "$1" == "build" ]]; then
   echo "Building: "$go_code_to_build
   go build -tags zmq_4_x $go_code_to_build
 
+else
+  $0
+
 fi
 
 cd $_OLD_PWD
