@@ -23,7 +23,10 @@ StartEngines will start all the goshare datastore engines based on config,
 if any engine failed, a failover local will be created and assigned
 */
 func StartEngines(configPath string) {
-	usableEngines, _ := LoadEngineCollection(configPath)
+	usableEngines, err := LoadEngineCollection(configPath)
+	if err != nil {
+		panic(fmt.Sprintf("\n\n[ERROR: Failed loading engine config.]\n\n%q", err))
+	}
 
 	fmt.Println("Start all the engines configured...")
 	for engineIndex := range usableEngines.Engines {
