@@ -27,7 +27,11 @@ func ZmqSmartProxy(engine *EngineDetail) {
 			engine.Destinations[idx].SplitterPattern = ".?"
 			defaultIndex++
 		}
-		pattern, patternError := regexp.Compile(engine.Destinations[idx].SplitterPattern)
+
+		pattern, patternError := regexp.Compile(".*")
+		if engine.Destinations[idx].SplitterPattern != "" {
+			pattern, patternError = regexp.Compile(engine.Destinations[idx].SplitterPattern)
+		}
 		if patternError != nil {
 			fmt.Println("ERROR: Compilation of provided Regexp failed.", patternError)
 			continue
@@ -81,6 +85,8 @@ func packetSuitsKeyPatterrn(gosharePacket goshare.Packet, destination EngineDest
 		for keyname := range gosharePacket.HashMap {
 			if destination.RequestPattern.Match([]byte(keyname)) {
 				return true
+			} else {
+				return false
 			}
 		}
 	case "read", "delete":
@@ -95,6 +101,8 @@ func packetSuitsKeyPatterrn(gosharePacket goshare.Packet, destination EngineDest
 func packetSuitsDestination(gosharePacket goshare.Packet, destination EngineDestination) bool {
 	if destination.SplitterMode == "partial" && destination.SplitterType == "key" {
 		return packetSuitsKeyPatterrn(gosharePacket, destination)
+	} else if destination.SplitterMode == "partial" && destination.SplitterType == "tsdb" {
+		return packetSuitsTimeSeries(gosharePacket, destination)
 	}
 	return false
 }

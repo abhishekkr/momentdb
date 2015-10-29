@@ -15,11 +15,18 @@ EngineDestination is a structure to manage details of multiple momentdb-stores
 or splitters balanced by this instance.
 */
 type EngineDestination struct {
-	DestinationIP      string `json:"destination_ip"`
-	DestinationPorts   []int  `json:"destination_ports"`
-	SplitterMode       string `json:"mode"`
-	SplitterType       string `json:"type"`
-	SplitterPattern    string `json:"pattern"`
+	DestinationIP    string `json:"destination_ip"`
+	DestinationPorts []int  `json:"destination_ports"`
+	SplitterMode     string `json:"mode"`
+	SplitterType     string `json:"type"`
+	SplitterPattern  string `json:"pattern"`
+	SplitterYear     string `json:"year"`
+	SplitterMonth    string `json:"month"`
+	SplitterDay      string `json:"day"`
+	SplitterHour     string `json:"hour"`
+	SplitterMinute   string `json:"minute"`
+	SplitterSecond   string `json:"second"`
+
 	SourceChannel      chan []byte
 	DestinationChannel chan []byte
 	RequestPattern     *regexp.Regexp

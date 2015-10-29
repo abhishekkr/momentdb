@@ -1,0 +1,50 @@
+[
+  {
+    "source_ip": "127.0.0.1",
+    "source_ports": [9797,9898],
+    "destinations": [
+      {
+        "destination_ip": "127.0.0.1",
+        "destination_ports": [8866,8686,8666],
+        "mode": "partial",
+        "type": "tsdb",
+        "year": ".*",
+        "month": ".*",
+        "day": ".*",
+        "minute": ".*",
+        "second": ".*",
+        "hour": "^1[0-9]$"
+      },
+      {
+        "destination_ip": "127.0.0.1",
+        "destination_ports": [8877,8787,8777],
+        "mode": "partial",
+        "type": "tsdb",
+        "year": ".*",
+        "month": ".*",
+        "day": ".*",
+        "minute": ".*",
+        "second": ".*",
+        "hour": "^2[0-9]$"
+      },
+      {
+        "destination_ip": "127.0.0.1",
+        "destination_ports": [8855,8585,8555],
+        "mode": "partial",
+        "type": "tsdb",
+        "year": ".*",
+        "month": ".*",
+        "day": ".*",
+        "minute": ".*",
+        "second": ".*",
+        "hour": "^[0-9]$"
+      },
+      {
+        "destination_ip": "127.0.0.1",
+        "destination_ports": [8811,8181,8111],
+        "mode": "default"
+      }
+    ]
+  }
+]
+
